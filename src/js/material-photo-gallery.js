@@ -121,17 +121,21 @@
 
 	Gallery.prototype._layout = function() {
 		var gallery = this;
+		gallery._thumbs = [];
 		var imgLoad = imagesLoaded(document.querySelector('div[data-google-image-layout]'));
 
 		imgLoad.on('progress', function(instance, image) {
 		  image.img.setAttribute('data-width', image.img.offsetWidth);
 		  image.img.setAttribute('data-height', image.img.offsetHeight);
+
+		  gallery._thumbs.push(image.img);
 		});
 
 		imgLoad.on('done', function(instance) {
 		  var g = new GoogleImageLayout().init({
 		  	after: function() {
 		  		gallery.init();
+		  		gallery._loadFullImgs();
 		  	}
 		  });
 		});
@@ -184,18 +188,11 @@
 		// Container element for thumbnails.
 		this._thumbsBox = this._gallery.querySelector('.' + this._cssClasses.THUMBS_BOX);
 
-		// Nodelist of thumbnails.
-		this._thumbsNodeList = this._thumbsBox.querySelectorAll('.' + this._cssClasses.THUMB_IMG);
-
-		// Array of thumbnails.
-		this._thumbs = Array.prototype.slice.call(this._thumbsNodeList);
-
 		// Container of full size images.
 		this._fullBox = this._gallery.querySelector('.' + this._cssClasses.FULL_BOX);
 
 		// Container of controls.
 		this._controls = this._gallery.querySelector('.' + this._cssClasses.CONTROLS);
-		// this._controls = CreateControls.init();
 
 		// Close control button.
 		this._closeBtn = this._controls.querySelector('.' + this._cssClasses.CONTROLS_CLOSE);
@@ -215,8 +212,6 @@
 		// Bind events to elements.
 		this._bindEvents.call(this);
 
-		// Load full size images.
-		this._loadFullImgs.call(this);
 	};
 
 	/**
@@ -249,11 +244,11 @@
 	};
 
 	Gallery.prototype._handleScroll = debounce(function() {
-		this._resetFullImg.call(this);	
+		if (this._fullImgsLoaded) this._resetFullImg.call(this);	
 	}, 25);
 
 	Gallery.prototype._handleResize = function() {
-		this._resetFullImg.call(this);
+		if (this._fullImgsLoaded) this._resetFullImg.call(this);
 	};
 
 	/**
@@ -282,7 +277,6 @@
 
 			// Append full size image to full size image container.
 			this._fullBox.appendChild(img);
-
 		}
 
 		this._loadFullImgsDone.call(this);		
@@ -291,8 +285,14 @@
 	Gallery.prototype._loadFullImgsDone = function() {
 
 		var imgLoad = imagesLoaded(this._fullBox);
-		imgLoad.on('done', function(instance) {
+		
+		imgLoad.on('always', function(instance) {
+
 			var imgArr = instance.images;
+
+			imgArr.forEach(function(img) {
+				if (!img.isLoaded) console.error(img.img.src + ' ' + 'failed to load.');
+			});
 			
 			this._fullImgs = [];
 			this._fullImgDimensions = [];
@@ -339,7 +339,6 @@
 			scaleY = (thumb.height / fullImgSize.height).toFixed(3);
 			transX = thumb.left - fullImgSize.left + (fullImgSize.width / 2);
 			transY = thumb.top - fullImgSize.top + (fullImgSize.height / 2);
-
 		} else {
 			scaleX = (thumb.width / fullImg.width).toFixed(3);
 			scaleY = (thumb.height / fullImg.height).toFixed(3);
