@@ -13,7 +13,7 @@
 		define(factory);
 	} else if (typeof exports === 'object') {
 		module.exports = factory(
-			require('imagesLoaded'),
+			require('imagesloaded'),
 			require('./vendor/google-image-layout'),
 			require('./create-controls')
 		);
@@ -122,13 +122,14 @@
 	Gallery.prototype._layout = function() {
 		var gallery = this;
 		gallery._thumbs = [];
-		var imgLoad = imagesLoaded(document.querySelector('div[data-google-image-layout]'));
+		var imgLoad = imagesLoaded(gallery._element.querySelector('div[data-google-image-layout]'));
+		imgLoad.images.forEach(function(image) {
+			gallery._thumbs.push(image.img);
+		});
 
 		imgLoad.on('progress', function(instance, image) {
 		  image.img.setAttribute('data-width', image.img.offsetWidth);
 		  image.img.setAttribute('data-height', image.img.offsetHeight);
-
-		  gallery._thumbs.push(image.img);
 		});
 
 		imgLoad.on('done', function(instance) {
@@ -259,24 +260,33 @@
 
 	Gallery.prototype._loadFullImgs = function() {
 
-		var src, img;
+		var src, img, video;
 
 		for (var i = 0, ii = this._thumbs.length; i < ii; i++) {
 
 			// Source of full size image.
 			src = this._thumbs[i].getAttribute('data-full');
 
-			// Create empty Image object.
-			img = new Image();
+			if (this._thumbs[i].getAttribute('data-type') === 'video') {
+				video = document.createElement('video');
+				video.controls = true;
+				video.src = src;
+				video.preload = 'metadata';
+				video.classList.add(this._cssClasses.FULL_IMG);
+				this._fullBox.appendChild(video);
+			} else {
+				// Create empty Image object.
+				img = new Image();
 
-			// Give new Image full size image src value.
-			img.src = src;
+				// Give new Image full size image src value.
+				img.src = src;
 
-			// Give new Image appropriate class name.
-			img.classList.add(this._cssClasses.FULL_IMG);
+				// Give new Image appropriate class name.
+				img.classList.add(this._cssClasses.FULL_IMG);
 
-			// Append full size image to full size image container.
-			this._fullBox.appendChild(img);
+				// Append full size image to full size image container.
+				this._fullBox.appendChild(img);
+			}
 		}
 
 		this._loadFullImgsDone.call(this);		
@@ -291,6 +301,7 @@
 			var imgArr = instance.images;
 
 			imgArr.forEach(function(img) {
+				if (img.img.nodeName === 'VIDEO') return;
 				if (!img.isLoaded) console.error(img.img.src + ' ' + 'failed to load.');
 			});
 			
@@ -313,8 +324,13 @@
 		var transform = this._transformFullImg(img, this._thumbs[i]);
 		this._fullImgsTransforms.push(transform);
 		
-		img.style.marginTop = -img.height / 2 + 'px';
-		img.style.marginLeft = -img.width / 2 + 'px';
+		if (img.nodeName === "VIDEO") {
+			img.style.marginTop = -img.videoHeight / 2 + 'px';
+			img.style.marginLeft = -img.videoWidth / 2 + 'px';
+		} else {
+			img.style.marginTop = -img.height / 2 + 'px';
+			img.style.marginLeft = -img.width / 2 + 'px';
+		}
 		if (applyTransform !== false) {
 			img.style[transformString] = transform;
 		}
@@ -555,7 +571,7 @@
 
 		this._newFullImg = dir === 'next' ? this._fullImg.nextElementSibling : this._fullImg.previousElementSibling;
 
-		if (!this._newFullImg || this._newFullImg.nodeName !== 'IMG') {
+		if (!this._newFullImg || (this._newFullImg.nodeName !== 'IMG' && this._newFullImg.nodeName !== 'VIDEO')) {
 			this._newFullImg = dir === 'next' ? this._newFullImg = this._fullImgs[0] : this._newFullImg = this._fullImgs[this._fullImgs.length - 1];
 			dir === 'next' ? this._thumbIndex = 0 : this._thumbIndex = this._fullImgs.length - 1;
 		}
