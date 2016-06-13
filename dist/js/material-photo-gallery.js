@@ -1349,8 +1349,8 @@ window.MaterialPhotoGallery = MaterialPhotoGallery;
 		this._fullImgsTransforms.push(transform);
 		
 		if (img.nodeName === "VIDEO") {
-			img.style.marginTop = -img.videoHeight / 2 + 'px';
-			img.style.marginLeft = -img.videoWidth / 2 + 'px';
+			img.style.marginTop = -img.clientHeight / 2 + 'px';
+			img.style.marginLeft = -img.clientWidth / 2 + 'px';
 		} else {
 			img.style.marginTop = -img.height / 2 + 'px';
 			img.style.marginLeft = -img.width / 2 + 'px';
